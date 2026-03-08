@@ -1,0 +1,43 @@
+{
+  "family": "my-web-app",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "<your-backend-image>:latest",
+      "memory": 512,
+      "cpu": 256,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "name": "frontend",
+      "image": "<your-frontend-image>:latest",
+      "memory": 512,
+      "cpu": 256,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "hostPort": 80
+        }
+      ],
+      "environment": [
+        {
+          "name": "REACT_APP_API_URL",
+          "value": "http://<backend-service>:3000"
+        }
+      ]
+    }
+  ]
+}
