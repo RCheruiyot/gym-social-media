@@ -15,7 +15,7 @@ This project now includes:
 
 From project root (`my-web-app`):
 
-```powershell
+```bash
 docker compose up --build
 ```
 
@@ -23,15 +23,25 @@ Then open:
 - Frontend: `http://localhost:3000`
 - Backend health endpoint: `http://localhost:5000/api/health`
 
+If ports are already in use, override them when starting:
+
+```bash
+FRONTEND_PORT=3001 BACKEND_PORT=5001 DB_PORT=5433 docker compose up --build
+```
+
+Then open:
+- Frontend: `http://localhost:3001`
+- Backend health endpoint: `http://localhost:5001/api/health`
+
 Stop services:
 
-```powershell
+```bash
 docker compose down
 ```
 
 If you want to also remove database data:
 
-```powershell
+```bash
 docker compose down -v
 ```
 

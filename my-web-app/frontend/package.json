@@ -2,7 +2,6 @@
   "name": "my-web-app-frontend",
   "version": "1.0.0",
   "private": true,
-  "proxy": "http://localhost:5000",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -10,14 +9,12 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3"
-  },
-  "devDependencies": {
-    "typescript": "^4.1.2",
-    "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0"
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.3",
+    "react-scripts": "5.0.1"
   },
   "eslintConfig": {
     "extends": [
