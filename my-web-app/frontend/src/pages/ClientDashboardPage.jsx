@@ -1,9 +1,29 @@
 import React from 'react';
+import { NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import RequireRole from '../auth/RequireRole';
+import { useRole } from '../auth/RoleContext';
+import { Button, Flex, Heading } from '@radix-ui/themes';
 
 const ClientDashboardPage = () => {
+    const { role, clearRole } = useRole();
+    const navigate = useNavigate();
   return (
     <section>
-      <h2>Client Dashboard</h2>
+      <Flex justify={"between"}>
+        <Heading>Client Dashboard</Heading>
+        {role && (
+            <Button
+              type="button"
+              onClick={() => {
+                clearRole();
+                navigate('/');
+              }}
+            >
+              Log out
+            </Button>
+        )}
+      </Flex>
+
       <header className="dashboard-header">
         <a href="#find-trainer">Find Trainer</a>
         <a href="#my-sessions">My Sessions</a>

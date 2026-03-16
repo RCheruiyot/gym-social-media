@@ -21,12 +21,9 @@ services:
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     environment:
-      - NODE_ENV=development
-      - PORT=5000
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/gym_social
     volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./backend:/app
     depends_on:
       - db
     networks:

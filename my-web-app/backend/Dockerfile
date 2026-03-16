@@ -1,14 +1,15 @@
-FROM node:20
+FROM php:8.3-cli
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY package*.json ./
+# Enable Postgres PDO driver
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libpq-dev \
+  && rm -rf /var/lib/apt/lists/* \
+  && docker-php-ext-install pdo pdo_pgsql
 
-RUN npm install
-
-COPY tsconfig.json ./
-COPY src ./src
+COPY . .
 
 EXPOSE 5000
 
-CMD ["npm", "run", "dev"]
+CMD ["php", "-S", "0.0.0.0:5000", "-t", "public"]

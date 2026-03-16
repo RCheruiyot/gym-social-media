@@ -33,6 +33,12 @@ Then open:
 - Frontend: `http://localhost:3001`
 - Backend health endpoint: `http://localhost:5001/api/health`
 
+If you want to check database data:
+
+```bash
+docker compose exec db psql -U postgres -d gym_social
+```
+
 Stop services:
 
 ```bash
@@ -93,6 +99,7 @@ Example POST body:
 
 ## 5. Database Notes
 
+- Table creation is automatic through `backend/sql/init.sql` when the `db` container starts for a fresh volume.
 - Table creation is automatic through `backend/sql/init.sql` when the `db` container starts for a fresh volume.
 - Default connection string used by backend:
   `postgresql://postgres:postgres@localhost:5432/gym_social`
