@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../src/postsClass.php';
+
 function send_json(int $status, array $body): void {
   http_response_code($status);
   header('Content-Type: application/json; charset=utf-8');
@@ -69,6 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 
+$postsClass = new PostsClass();
+
 try {
   if ($method === 'GET' && $path === '/api/health') {
     send_json(200, ['ok' => true, 'service' => 'backend']);
@@ -76,37 +80,17 @@ try {
   }
 
   if ($method === 'GET' && $path === '/api/posts') {
-    $stmt = db()->query(
-      'SELECT id, title, content, author_name AS "authorName", created_at AS "createdAt" FROM posts ORDER BY created_at DESC'
-    );
-    send_json(200, $stmt->fetchAll());
+    send_json(200, $postsClass->getPosts(db()));
     exit;
   }
 
   if ($method === 'POST' && $path === '/api/posts') {
-    $body = read_json_body();
-
-    $title = isset($body['title']) ? trim((string)$body['title']) : '';
-    $content = isset($body['content']) ? trim((string)$body['content']) : '';
-    $authorName = isset($body['authorName']) ? trim((string)$body['authorName']) : '';
-
-    if ($title === '' || $content === '' || $authorName === '') {
-      send_json(400, ['message' => 'title, content, and authorName are required']);
-      exit;
+    try {
+      $row = $postsClass->createPost(db(), read_json_body());
+      send_json(201, $row);
+    } catch (InvalidArgumentException $err) {
+      send_json(400, ['message' => $err->getMessage()]);
     }
-
-    $stmt = db()->prepare(
-      'INSERT INTO posts (title, content, author_name) VALUES (:title, :content, :author_name)
-       RETURNING id, title, content, author_name AS "authorName", created_at AS "createdAt"'
-    );
-    $stmt->execute([
-      ':title' => $title,
-      ':content' => $content,
-      ':author_name' => $authorName,
-    ]);
-
-    $row = $stmt->fetch();
-    send_json(201, is_array($row) ? $row : []);
     exit;
   }
 

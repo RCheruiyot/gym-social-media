@@ -33,6 +33,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    command: sh -c "npm install && npm start"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
