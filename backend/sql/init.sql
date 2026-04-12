@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS trainer_sessions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE trainer_sessions
+  ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'Availability Hold',
+  ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+
 CREATE TABLE IF NOT EXISTS client_sessions (
   id SERIAL PRIMARY KEY,
   session_id INT NOT NULL,

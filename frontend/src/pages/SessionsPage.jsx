@@ -4,75 +4,56 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { Badge, Button, Card, Flex, Heading, Text } from '@radix-ui/themes';
+import { Badge, Button, Card, Flex, Heading, Text, TextArea, TextField } from '@radix-ui/themes';
 import { useRole } from '../auth/RoleContext';
-import { createTrainerSession, DEFAULT_TRAINER_ID, fetchTrainerSessions } from '../api/trainerSessions';
+import {
+  cancelTrainerSession,
+  createTrainerSession,
+  DEFAULT_TRAINER_ID,
+  fetchClientSessions,
+  fetchTrainerSessions,
+  updateTrainerSession,
+} from '../api/trainerSessions';
 
-const baseEvents = [
-  {
-    id: '1',
-    title: 'Upper Body Power',
-    start: '2026-03-23T07:00:00',
-    end: '2026-03-23T08:00:00',
-    trainer: 'Maya Chen',
-    location: 'Virtual',
-    status: 'Confirmed',
-  },
-  {
-    id: '2',
-    title: 'Mobility Reset',
-    start: '2026-03-24T18:30:00',
-    end: '2026-03-24T19:15:00',
-    trainer: 'Jordan Miles',
-    location: 'Studio A',
-    status: 'Pending',
-  },
-  {
-    id: '3',
-    title: 'Conditioning Intervals',
-    start: '2026-03-26T09:00:00',
-    end: '2026-03-26T10:00:00',
-    trainer: 'Maya Chen',
-    location: 'Virtual',
-    status: 'Confirmed',
-  },
-  {
-    id: '4',
-    title: 'Progress Review',
-    start: '2026-03-28T12:00:00',
-    end: '2026-03-28T12:45:00',
-    trainer: 'Alex Rivera',
-    location: 'Virtual',
-    status: 'Waitlist',
-  },
-];
+const toApiStatus = (status) => (status === 'Cancelled' ? 'cancelled' : 'active');
+
+const buildSelectedEvent = (event) => ({
+  id: event.id,
+  title: event.title,
+  description: event.extendedProps.description || '',
+  start: event.startStr,
+  end: event.endStr || '',
+  trainer: event.extendedProps.trainer || event.extendedProps.coachName,
+  sessionId: event.extendedProps.sessionId ?? event.id.replace(/^trainer-/, ''),
+  trainerId: event.extendedProps.trainerId,
+  location: event.extendedProps.location,
+  status: event.extendedProps.status,
+});
 
 const SessionsPage = () => {
   const { role } = useRole();
+  const [trainerEvents, setTrainerEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [trainerEvents, setTrainerEvents] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const [formTitle, setFormTitle] = useState('');
+  const [formDescription, setFormDescription] = useState('');
 
   const title = role === 'trainer' ? 'Schedule' : 'My Sessions';
   const subtitle =
     role === 'trainer'
-      ? 'Manage availability, upcoming client calls, and reschedules in one calendar.'
-      : 'See your booked sessions, upcoming training blocks, and session details in calendar view.';
+      ? 'Manage availability, update session details, and cancel sessions from your calendar.'
+      : 'See your booked sessions, including trainer titles and descriptions, in calendar view.';
 
   useEffect(() => {
     let isMounted = true;
+    const loadEvents = role === 'trainer' ? fetchTrainerSessions : fetchClientSessions;
 
-    if (role !== 'trainer') {
-      setTrainerEvents([]);
-      return undefined;
-    }
-
-    fetchTrainerSessions()
+    loadEvents()
       .then((rows) => {
         if (!isMounted) return;
-        setTrainerEvents(rows);
+        setTrainerEvents(rows.map((event) => ({ ...event, trainer: event.coachName })));
         setStatusMessage('');
       })
       .catch((error) => {
@@ -86,13 +67,19 @@ const SessionsPage = () => {
     };
   }, [role]);
 
-  const events = useMemo(() => {
-    const sourceEvents = role === 'trainer' ? trainerEvents : baseEvents;
-    return sourceEvents.map((event) => ({
-      ...event,
-      classNames: [`fc-status-${event.status.toLowerCase()}`],
-    }));
-  }, [role, trainerEvents]);
+  useEffect(() => {
+    setFormTitle(selectedEvent?.title || '');
+    setFormDescription(selectedEvent?.description || '');
+  }, [selectedEvent]);
+
+  const events = useMemo(
+    () =>
+      trainerEvents.map((event) => ({
+        ...event,
+        classNames: [`fc-status-${String(event.status || '').toLowerCase()}`],
+      })),
+    [trainerEvents],
+  );
 
   const todayCount = events.filter((event) => event.start.startsWith('2026-03-23')).length;
 
@@ -101,7 +88,8 @@ const SessionsPage = () => {
 
     const draftEvent = {
       id: `draft-${selection.startStr}`,
-      title: 'Available Slot',
+      title: 'Availability Hold',
+      description: '',
       start: selection.startStr,
       end: selection.endStr || selection.startStr,
       trainerId: DEFAULT_TRAINER_ID,
@@ -118,8 +106,8 @@ const SessionsPage = () => {
     setIsDialogOpen(true);
   };
 
-  const saveTrainerSession = async () => {
-    if (role !== 'trainer' || !selectedEvent || !selectedEvent.id.startsWith('draft-')) {
+  const handleSave = async () => {
+    if (role !== 'trainer' || !selectedEvent) {
       setIsDialogOpen(false);
       return;
     }
@@ -128,28 +116,88 @@ const SessionsPage = () => {
     setStatusMessage('');
 
     try {
-      const savedEvent = await createTrainerSession({
-        start: selectedEvent.start,
-        end: selectedEvent.end,
-        trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
-      });
+      const savedEvent = selectedEvent.id.startsWith('draft-')
+        ? await createTrainerSession({
+            start: selectedEvent.start,
+            end: selectedEvent.end,
+            trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
+            title: formTitle,
+            description: formDescription,
+          })
+        : await updateTrainerSession({
+            sessionId: Number(selectedEvent.sessionId),
+            start: selectedEvent.start,
+            end: selectedEvent.end,
+            trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
+            title: formTitle,
+            description: formDescription,
+            status: toApiStatus(selectedEvent.status),
+          });
 
-      setTrainerEvents((currentEvents) => [
-        ...currentEvents.filter((event) => event.id !== selectedEvent.id),
-        {
-          ...savedEvent,
-          trainer: savedEvent.coachName,
-        },
-      ]);
-      setSelectedEvent({
-        ...savedEvent,
-        trainer: savedEvent.coachName,
-      });
+      setTrainerEvents((currentEvents) =>
+        selectedEvent.id.startsWith('draft-')
+          ? [...currentEvents.filter((event) => event.id !== selectedEvent.id), { ...savedEvent, trainer: savedEvent.coachName }]
+          : currentEvents.map((event) =>
+              event.id === selectedEvent.id ? { ...savedEvent, trainer: savedEvent.coachName } : event,
+            ),
+      );
+      setSelectedEvent({ ...savedEvent, trainer: savedEvent.coachName });
       setIsDialogOpen(false);
     } catch (error) {
       setStatusMessage(error.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCancelSession = async () => {
+    if (role !== 'trainer' || !selectedEvent || selectedEvent.id.startsWith('draft-')) {
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage('');
+
+    try {
+      const cancelledEvent = await cancelTrainerSession(Number(selectedEvent.sessionId));
+      setTrainerEvents((currentEvents) =>
+        currentEvents.map((event) =>
+          event.id === selectedEvent.id ? { ...cancelledEvent, trainer: cancelledEvent.coachName } : event,
+        ),
+      );
+      setSelectedEvent({ ...cancelledEvent, trainer: cancelledEvent.coachName });
+      setIsDialogOpen(false);
+    } catch (error) {
+      setStatusMessage(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const persistCalendarUpdate = async (info) => {
+    if (role !== 'trainer' || info.event.id.startsWith('draft-')) {
+      return;
+    }
+
+    try {
+      const updatedEvent = await updateTrainerSession({
+        sessionId: Number(info.event.extendedProps.sessionId ?? info.event.id.replace(/^trainer-/, '')),
+        start: info.event.startStr,
+        end: info.event.endStr || info.event.startStr,
+        trainerId: info.event.extendedProps.trainerId || DEFAULT_TRAINER_ID,
+        title: info.event.title,
+        description: info.event.extendedProps.description || '',
+        status: toApiStatus(info.event.extendedProps.status),
+      });
+      setTrainerEvents((currentEvents) =>
+        currentEvents.map((event) =>
+          event.id === info.event.id ? { ...updatedEvent, trainer: updatedEvent.coachName } : event,
+        ),
+      );
+      setStatusMessage('');
+    } catch (error) {
+      info.revert();
+      setStatusMessage(error.message);
     }
   };
 
@@ -189,27 +237,16 @@ const SessionsPage = () => {
             }}
             height="auto"
             events={events}
-            selectable
+            selectable={role === 'trainer'}
             editable={role === 'trainer'}
             nowIndicator
             select={addTrainerDraftSession}
             eventClick={(info) => {
-              setSelectedEvent(
-                info.event.extendedProps && info.event.title
-                  ? {
-                      id: info.event.id,
-                      title: info.event.title,
-                      start: info.event.startStr,
-                      end: info.event.endStr || '',
-                      trainer: info.event.extendedProps.trainer || info.event.extendedProps.coachName,
-                      trainerId: info.event.extendedProps.trainerId,
-                      location: info.event.extendedProps.location,
-                      status: info.event.extendedProps.status,
-                    }
-                  : null,
-              );
+              setSelectedEvent(buildSelectedEvent(info.event));
               setIsDialogOpen(true);
             }}
+            eventDrop={persistCalendarUpdate}
+            eventResize={persistCalendarUpdate}
           />
         </Card>
       </div>
@@ -226,8 +263,8 @@ const SessionsPage = () => {
                 <Dialog.Description asChild>
                   <Text color="gray">
                     {role === 'trainer'
-                      ? 'Review or adjust this scheduled session.'
-                      : 'Review this session and request changes if needed.'}
+                      ? 'Edit the session title and description, save changes, or cancel the session.'
+                      : 'Review your booked session details.'}
                   </Text>
                 </Dialog.Description>
               </div>
@@ -235,9 +272,25 @@ const SessionsPage = () => {
               {selectedEvent ? (
                 <Flex direction="column" gap="3" className="session-detail-stack">
                   <div>
-                    <Text weight="bold">{selectedEvent.title}</Text>
+                    {role === 'trainer' ? (
+                      <TextField.Root value={formTitle} onChange={(event) => setFormTitle(event.target.value)} />
+                    ) : (
+                      <Text weight="bold">{selectedEvent.title}</Text>
+                    )}
                     <Text color="gray">{new Date(selectedEvent.start).toLocaleString()}</Text>
                   </div>
+
+                  {role === 'trainer' ? (
+                    <div>
+                      <Text size="2" color="gray">
+                        Description
+                      </Text>
+                      <TextArea value={formDescription} onChange={(event) => setFormDescription(event.target.value)} />
+                    </div>
+                  ) : (
+                    selectedEvent.description ? <Text color="gray">{selectedEvent.description}</Text> : null
+                  )}
+
                   <div className="session-meta-row">
                     <Text color="gray">Coach</Text>
                     <Text>{selectedEvent.trainer}</Text>
@@ -261,18 +314,23 @@ const SessionsPage = () => {
                     </Badge>
                   </div>
                   <Flex justify="between" gap="3" wrap="wrap">
+                    {role === 'trainer' && !selectedEvent.id.startsWith('draft-') && selectedEvent.status !== 'Cancelled' ? (
+                      <Button variant="soft" color="red" disabled={isSaving} onClick={handleCancelSession}>
+                        {isSaving ? 'Cancelling...' : 'Cancel Session'}
+                      </Button>
+                    ) : null}
                     <Dialog.Close asChild>
                       <Button variant="soft" color="gray">
                         Close
                       </Button>
                     </Dialog.Close>
-                    <Button variant="soft" disabled={isSaving} onClick={saveTrainerSession}>
-                      {role === 'trainer'
-                        ? selectedEvent.id.startsWith('draft-')
+                    {role === 'trainer' ? (
+                      <Button variant="soft" disabled={isSaving} onClick={handleSave}>
+                        {selectedEvent.id.startsWith('draft-')
                           ? (isSaving ? 'Saving...' : 'Create Availability Slot')
-                          : 'Close'
-                        : 'Request Change'}
-                    </Button>
+                          : (isSaving ? 'Saving...' : 'Save Changes')}
+                      </Button>
+                    ) : null}
                   </Flex>
                 </Flex>
               ) : null}

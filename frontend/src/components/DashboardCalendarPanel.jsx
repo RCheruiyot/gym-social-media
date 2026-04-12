@@ -4,14 +4,24 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { Badge, Button, Card, Flex, Heading, IconButton, Text } from '@radix-ui/themes';
+import { Badge, Button, Card, Flex, Heading, IconButton, Text, TextArea, TextField } from '@radix-ui/themes';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import { createTrainerSession, DEFAULT_TRAINER_ID, fetchTrainerSessions } from '../api/trainerSessions';
+import {
+  cancelTrainerSession,
+  createClientSessionBooking,
+  createTrainerSession,
+  DEFAULT_CLIENT_ID,
+  DEFAULT_TRAINER_ID,
+  fetchAvailableTrainerSessions,
+  fetchTrainerSessions,
+  updateTrainerSession,
+} from '../api/trainerSessions';
 
 const clientBaseEvents = [
   {
     id: 'c1',
     title: 'Upper Body Power',
+    description: 'Power-building block focused on pressing and pulling volume.',
     start: '2026-03-23T07:00:00',
     end: '2026-03-23T08:00:00',
     coachLabel: 'Coach',
@@ -19,64 +29,32 @@ const clientBaseEvents = [
     location: 'Virtual',
     status: 'Confirmed',
   },
-  {
-    id: 'c2',
-    title: 'Mobility Reset',
-    start: '2026-03-24T18:30:00',
-    end: '2026-03-24T19:15:00',
-    coachLabel: 'Coach',
-    coachName: 'Jordan Miles',
-    location: 'Studio A',
-    status: 'Pending',
-  },
-  {
-    id: 'c3',
-    title: 'Progress Review',
-    start: '2026-03-28T12:00:00',
-    end: '2026-03-28T12:45:00',
-    coachLabel: 'Coach',
-    coachName: 'Alex Rivera',
-    location: 'Virtual',
-    status: 'Waitlist',
-  },
 ];
 
 const trainerBaseEvents = [
   {
     id: 't1',
-    title: 'Onboarding Call',
+    sessionId: 1,
+    title: 'Availability Hold',
+    description: 'Open training slot for new client bookings.',
     start: '2026-03-23T10:00:00',
     end: '2026-03-23T10:30:00',
-    coachLabel: 'Client',
-    coachName: 'Taylor Brooks',
-    location: 'Virtual',
-    status: 'Confirmed',
-  },
-  {
-    id: 't2',
-    title: 'Technique Check-In',
-    start: '2026-03-24T16:00:00',
-    end: '2026-03-24T17:00:00',
-    coachLabel: 'Client',
-    coachName: 'Jordan Lee',
-    location: 'Studio B',
-    status: 'Confirmed',
-  },
-  {
-    id: 't3',
-    title: 'Availability Hold',
-    start: '2026-03-26T08:00:00',
-    end: '2026-03-26T09:00:00',
     coachLabel: 'Client',
     coachName: 'Open Slot',
     location: 'Virtual',
     status: 'Pending',
+    trainerId: DEFAULT_TRAINER_ID,
   },
 ];
 
-const formatSelectedEvent = (event) => ({
+const toApiStatus = (status) => (status === 'Cancelled' ? 'cancelled' : 'active');
+
+const buildSelectedEvent = (event) => ({
   id: event.id,
+  sessionId: event.extendedProps.sessionId ?? event.id.replace(/^trainer-/, ''),
+  trainerId: event.extendedProps.trainerId,
   title: event.title,
+  description: event.extendedProps.description || '',
   start: event.startStr,
   end: event.endStr || '',
   coachLabel: event.extendedProps.coachLabel,
@@ -92,16 +70,15 @@ const DashboardCalendarPanel = ({ role }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const [formTitle, setFormTitle] = useState('');
+  const [formDescription, setFormDescription] = useState('');
 
   useEffect(() => {
     let isMounted = true;
 
-    if (role !== 'trainer') {
-      setEvents(clientBaseEvents);
-      return undefined;
-    }
+    const loadEvents = role === 'trainer' ? fetchTrainerSessions : fetchAvailableTrainerSessions;
 
-    fetchTrainerSessions()
+    loadEvents()
       .then((rows) => {
         if (!isMounted) return;
         setEvents(rows);
@@ -118,39 +95,66 @@ const DashboardCalendarPanel = ({ role }) => {
     };
   }, [role]);
 
+  useEffect(() => {
+    setFormTitle(selectedEvent?.title || '');
+    setFormDescription(selectedEvent?.description || '');
+  }, [selectedEvent]);
+
   const calendarEvents = useMemo(
     () =>
       events.map((event) => ({
         ...event,
-        classNames: [`fc-status-${event.status.toLowerCase()}`],
+        classNames: [`fc-status-${String(event.status || '').toLowerCase()}`],
       })),
     [events],
   );
 
   const addDraftSession = (selection) => {
+    if (role !== 'trainer') return;
+
     const draftEvent = {
       id: `draft-${selection.startStr}`,
-      title: role === 'trainer' ? 'Available Slot' : 'Requested Session',
+      title: 'Availability Hold',
+      description: '',
       start: selection.startStr,
       end: selection.endStr || selection.startStr,
       trainerId: DEFAULT_TRAINER_ID,
-      coachLabel: role === 'trainer' ? 'Client' : 'Coach',
-      coachName: role === 'trainer' ? 'Open Slot' : 'Unassigned',
-      location: role === 'trainer' ? 'Choose format' : 'Pending confirmation',
+      coachLabel: 'Client',
+      coachName: 'Open Slot',
+      location: 'Choose format',
       status: 'Pending',
     };
 
-    setEvents((currentEvents) => {
-      const withoutOldDrafts = currentEvents.filter((event) => !event.id.startsWith('draft-'));
-      return [...withoutOldDrafts, draftEvent];
-    });
+    setEvents((currentEvents) => [
+      ...currentEvents.filter((event) => !event.id.startsWith('draft-')),
+      draftEvent,
+    ]);
     setSelectedEvent(draftEvent);
     setIsDialogOpen(true);
   };
 
-  const saveTrainerSession = async () => {
-    if (role !== 'trainer' || !selectedEvent || !selectedEvent.id.startsWith('draft-')) {
+  const handleSave = async () => {
+    if (!selectedEvent) {
       setIsDialogOpen(false);
+      return;
+    }
+
+    if (role === 'client') {
+      setIsSaving(true);
+      setStatusMessage('');
+
+      try {
+        await createClientSessionBooking({
+          sessionId: selectedEvent.sessionId,
+          clientId: DEFAULT_CLIENT_ID,
+        });
+        setEvents((currentEvents) => currentEvents.filter((event) => event.id !== selectedEvent.id));
+        setIsDialogOpen(false);
+      } catch (error) {
+        setStatusMessage(error.message);
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
 
@@ -158,22 +162,85 @@ const DashboardCalendarPanel = ({ role }) => {
     setStatusMessage('');
 
     try {
-      const savedEvent = await createTrainerSession({
-        start: selectedEvent.start,
-        end: selectedEvent.end,
-        trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
-      });
+      const savedEvent = selectedEvent.id.startsWith('draft-')
+        ? await createTrainerSession({
+            start: selectedEvent.start,
+            end: selectedEvent.end,
+            trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
+            title: formTitle,
+            description: formDescription,
+          })
+        : await updateTrainerSession({
+            sessionId: Number(selectedEvent.sessionId),
+            start: selectedEvent.start,
+            end: selectedEvent.end,
+            trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
+            title: formTitle,
+            description: formDescription,
+            status: toApiStatus(selectedEvent.status),
+          });
 
-      setEvents((currentEvents) => [
-        ...currentEvents.filter((event) => event.id !== selectedEvent.id),
-        savedEvent,
-      ]);
+      setEvents((currentEvents) =>
+        selectedEvent.id.startsWith('draft-')
+          ? [...currentEvents.filter((event) => event.id !== selectedEvent.id), savedEvent]
+          : currentEvents.map((event) => (event.id === selectedEvent.id ? savedEvent : event)),
+      );
       setSelectedEvent(savedEvent);
       setIsDialogOpen(false);
     } catch (error) {
       setStatusMessage(error.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCancelSession = async () => {
+    if (role !== 'trainer' || !selectedEvent || selectedEvent.id.startsWith('draft-')) {
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage('');
+
+    try {
+      const cancelledEvent = await cancelTrainerSession(Number(selectedEvent.sessionId));
+      setEvents((currentEvents) =>
+        currentEvents.map((event) => (event.id === selectedEvent.id ? cancelledEvent : event)),
+      );
+      setSelectedEvent(cancelledEvent);
+      setIsDialogOpen(false);
+    } catch (error) {
+      setStatusMessage(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const persistCalendarUpdate = async (info) => {
+    if (role !== 'trainer' || info.event.id.startsWith('draft-')) {
+      setSelectedEvent(buildSelectedEvent(info.event));
+      setIsDialogOpen(true);
+      return;
+    }
+
+    try {
+      const updatedEvent = await updateTrainerSession({
+        sessionId: Number(info.event.extendedProps.sessionId ?? info.event.id.replace(/^trainer-/, '')),
+        start: info.event.startStr,
+        end: info.event.endStr || info.event.startStr,
+        trainerId: info.event.extendedProps.trainerId || DEFAULT_TRAINER_ID,
+        title: info.event.title,
+        description: info.event.extendedProps.description || '',
+        status: toApiStatus(info.event.extendedProps.status),
+      });
+      setEvents((currentEvents) =>
+        currentEvents.map((event) => (event.id === info.event.id ? updatedEvent : event)),
+      );
+      setSelectedEvent(updatedEvent);
+      setStatusMessage('');
+    } catch (error) {
+      info.revert();
+      setStatusMessage(error.message);
     }
   };
 
@@ -185,8 +252,8 @@ const DashboardCalendarPanel = ({ role }) => {
             <Heading size="5">{role === 'trainer' ? 'Schedule Manager' : 'Booking Calendar'}</Heading>
             <Text color="gray">
               {role === 'trainer'
-                ? 'Click an event to manage it, or drag across time to create an availability hold.'
-                : 'Click an event for details, or drag across time to request a new training block.'}
+                ? 'Create slots, edit titles and descriptions, and cancel sessions from one calendar.'
+                : 'Review available trainer slots and book the one that fits your schedule.'}
             </Text>
           </div>
           <Badge color={role === 'trainer' ? 'violet' : 'blue'}>{events.length} items</Badge>
@@ -207,55 +274,67 @@ const DashboardCalendarPanel = ({ role }) => {
           }}
           height="auto"
           events={calendarEvents}
-          selectable
-          editable
+          selectable={role === 'trainer'}
+          editable={role === 'trainer'}
           selectMirror
           nowIndicator
           select={addDraftSession}
           eventClick={(info) => {
-            setSelectedEvent(formatSelectedEvent(info.event));
+            setSelectedEvent(buildSelectedEvent(info.event));
             setIsDialogOpen(true);
           }}
-          eventDrop={(info) => {
-            setSelectedEvent(formatSelectedEvent(info.event));
-            setIsDialogOpen(true);
-          }}
-          eventResize={(info) => {
-            setSelectedEvent(formatSelectedEvent(info.event));
-            setIsDialogOpen(true);
-          }}
+          eventDrop={persistCalendarUpdate}
+          eventResize={persistCalendarUpdate}
         />
       </Card>
 
       <Dialog.Root open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="dialog-overlay" />
           <Dialog.Content className="dialog-content">
             <Flex direction="column" gap="4">
               <div>
                 <Flex justify="between" align="center">
-                    <Dialog.Title asChild>
-                      <Heading size="5">{role === 'trainer' ? 'Schedule Details' : 'Session Details'}</Heading>
-                    </Dialog.Title>
-                    <Dialog.Close asChild>
-                      <IconButton variant="ghost" color="gray">
-                        <Cross1Icon />
-                              
-                      </IconButton>
-                    </Dialog.Close>
+                  <Dialog.Title asChild>
+                    <Heading size="5">{role === 'trainer' ? 'Schedule Details' : 'Session Details'}</Heading>
+                  </Dialog.Title>
+                  <Dialog.Close asChild>
+                    <IconButton variant="ghost" color="gray">
+                      <Cross1Icon />
+                    </IconButton>
+                  </Dialog.Close>
                 </Flex>
-
                 <Text color="gray">
                   {role === 'trainer'
-                    ? 'Update a booked session or review an availability hold.'
-                    : 'Review this session and send a request if you want to change it.'}
+                    ? 'Set the session title, add a description, save updates, or cancel the slot.'
+                    : 'Review the trainer session details before you book it.'}
                 </Text>
               </div>
 
               {selectedEvent ? (
                 <Flex direction="column" gap="3" className="session-detail-stack">
-                  <Flex justify={"between"}>
-                    <Text weight="bold">{selectedEvent.title}</Text>
+                  <Flex justify="between" align="start" gap="3">
+                    <div style={{ flex: 1 }}>
+                      {role === 'trainer' ? (
+                        <TextField.Root value={formTitle} onChange={(event) => setFormTitle(event.target.value)} />
+                      ) : (
+                        <Text weight="bold">{selectedEvent.title}</Text>
+                      )}
+                    </div>
                     <Text color="gray">{new Date(selectedEvent.start).toLocaleString()}</Text>
                   </Flex>
+
+                  {role === 'trainer' ? (
+                    <div>
+                      <Text size="2" color="gray">
+                        Description
+                      </Text>
+                      <TextArea value={formDescription} onChange={(event) => setFormDescription(event.target.value)} />
+                    </div>
+                  ) : (
+                    selectedEvent.description ? <Text color="gray">{selectedEvent.description}</Text> : null
+                  )}
+
                   <div className="session-meta-row">
                     <Text color="gray">{selectedEvent.coachLabel}</Text>
                     <Text>{selectedEvent.coachName}</Text>
@@ -279,18 +358,24 @@ const DashboardCalendarPanel = ({ role }) => {
                     </Badge>
                   </div>
                   <Flex justify="between" gap="3" wrap="wrap">
-                    <Button variant="soft" onClick={saveTrainerSession} disabled={isSaving}>
+                    {role === 'trainer' && !selectedEvent.id.startsWith('draft-') && selectedEvent.status !== 'Cancelled' ? (
+                      <Button variant="soft" color="red" disabled={isSaving} onClick={handleCancelSession}>
+                        {isSaving ? 'Cancelling...' : 'Cancel Session'}
+                      </Button>
+                    ) : null}
+                    <Button variant="soft" disabled={isSaving} onClick={handleSave}>
                       {role === 'trainer'
                         ? selectedEvent.id.startsWith('draft-')
                           ? (isSaving ? 'Saving...' : 'Create Availability Slot')
-                          : 'Close'
-                        : 'Send Booking Request'}
+                          : (isSaving ? 'Saving...' : 'Save Changes')
+                        : (isSaving ? 'Booking...' : 'Book Session')}
                     </Button>
                   </Flex>
                 </Flex>
               ) : null}
             </Flex>
           </Dialog.Content>
+        </Dialog.Portal>
       </Dialog.Root>
     </div>
   );

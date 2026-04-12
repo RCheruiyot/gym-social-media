@@ -1,256 +1,106 @@
 .app-shell {
-  max-width: 920px;
-  margin: 2rem auto;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  line-height: 1.5;
-  padding: 0 1rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
 }
 
-.top-nav {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+.app-header {
+  margin-bottom: 16px;
 }
 
-.top-nav a {
-  text-decoration: none;
-  color: #0b3a67;
-  padding: 0.4rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid #d6e4f2;
-}
-
-.top-nav .active-link {
-  background: #d8e9fb;
-  border-color: #8ab4dc;
-}
-
-.stack-form {
+.stack-form,
+.signup-page,
+.sessions-page,
+.find-trainer-page,
+.dashboard-calendar-panel {
   display: grid;
-  gap: 0.75rem;
-  max-width: 620px;
+  gap: 16px;
 }
 
-.tabs-root {
-  margin: 1rem 0 1.5rem;
-}
-
-.tabs-list {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.tabs-trigger {
-  border: 1px solid #b2c7dd;
-  background: white;
-  color: #0f2940;
-  border-radius: 6px;
-  padding: 0.4rem 0.75rem;
-  cursor: pointer;
-}
-
-.tabs-trigger[data-state='active'] {
-  background: #d8e9fb;
-  border-color: #8ab4dc;
-}
-
-.tabs-content {
-  border: 1px solid #d1dce7;
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.verify-box {
-  border: 1px dashed #9ab4cf;
-  border-radius: 8px;
-  background: #f4f8fc;
-  padding: 0.75rem;
-}
-
-.field-label {
+.field-label,
+.trainer-search,
+.trainer-select {
   display: grid;
-  gap: 0.4rem;
+  gap: 6px;
+}
+
+.verify-box,
+.widget-detail-card,
+.calendar-shell,
+.trainer-filter-card {
+  border-radius: 16px;
 }
 
 .dashboard-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 0.8rem 0 1rem;
+  gap: 8px;
+  margin: 12px 0 16px;
 }
 
 .dashboard-header a {
-  background: #eef4fb;
-  border: 1px solid #cad9ea;
-  color: #163b62;
   text-decoration: none;
-  padding: 0.35rem 0.65rem;
-  border-radius: 999px;
 }
 
-.widget-grid {
+.widget-grid,
+.trainer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.9rem;
-}
-
-.widget-card {
-  border: 1px solid #d6e0eb;
-  border-radius: 10px;
-  padding: 0.9rem;
-  background: #fff;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
 }
 
 .widget-action-card {
   width: 100%;
   text-align: left;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
-.widget-action-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(21, 49, 76, 0.08);
-  border-color: #a9c5e0;
-}
-
-.widget-card-active {
-  border-color: #4f8cc9;
-  box-shadow: 0 0 0 2px rgba(79, 140, 201, 0.16);
-}
-
-.widget-detail-section {
-  margin-top: 1rem;
-}
-
-.widget-detail-card {
-  border-radius: 18px;
-}
-
-.calendar-panel-header {
-  margin-bottom: 1rem;
-}
-
-.dashboard-calendar-panel {
-  display: grid;
-  gap: 1rem;
-}
-
-.sessions-page {
-  display: grid;
-  gap: 1.25rem;
-}
-
-.find-trainer-page {
-  display: grid;
-  gap: 1.25rem;
-}
-
-.find-trainer-hero {
-  margin-bottom: 0.5rem;
-}
-
-.find-trainer-subtitle {
-  display: block;
-  max-width: 46rem;
-  margin-top: 0.5rem;
-}
-
-.trainer-filter-card {
-  border-radius: 18px;
-}
-
-.trainer-search,
-.trainer-select {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.trainer-search {
-  min-width: min(100%, 340px);
-  flex: 1;
-}
-
-.trainer-select {
-  min-width: 220px;
-}
-
-.trainer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.trainer-card {
-  display: grid;
-  gap: 1rem;
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at top right, rgba(94, 164, 255, 0.12), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-}
-
-.trainer-badge-row {
-  margin-top: 0.25rem;
-}
-
+.widget-detail-section,
+.sessions-hero,
+.find-trainer-hero,
+.calendar-panel-header,
+.trainer-card,
+.trainer-badge-row,
 .trainer-card-footer {
-  padding-top: 0.25rem;
-  border-top: 1px solid #e5edf6;
+  display: grid;
+  gap: 12px;
 }
 
-.sessions-hero {
-  margin-bottom: 0.5rem;
-}
-
+.find-trainer-subtitle,
 .sessions-subtitle {
   display: block;
-  max-width: 52rem;
-  margin-top: 0.5rem;
+  max-width: 56rem;
 }
 
 .sessions-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2.2fr) minmax(280px, 0.9fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-.calendar-shell,
-.session-sidebar {
-  border-radius: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
 .session-detail-stack {
-  margin-top: 1rem;
+  margin-top: 8px;
 }
 
 .session-meta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .fc {
-  --fc-border-color: #d6e0eb;
-  --fc-button-bg-color: #15314c;
-  --fc-button-border-color: #15314c;
-  --fc-button-hover-bg-color: #244b72;
-  --fc-button-hover-border-color: #244b72;
-  --fc-button-active-bg-color: #0f2740;
-  --fc-button-active-border-color: #0f2740;
-  --fc-event-bg-color: #dcecff;
-  --fc-event-border-color: #b3cff4;
-  --fc-event-text-color: #123557;
-  --fc-today-bg-color: rgba(33, 103, 214, 0.08);
-}
-
-.fc .fc-toolbar-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  --fc-border-color: var(--gray-6);
+  --fc-button-bg-color: var(--accent-9);
+  --fc-button-border-color: var(--accent-9);
+  --fc-button-hover-bg-color: var(--accent-10);
+  --fc-button-hover-border-color: var(--accent-10);
+  --fc-button-active-bg-color: var(--accent-10);
+  --fc-button-active-border-color: var(--accent-10);
+  --fc-event-bg-color: var(--accent-3);
+  --fc-event-border-color: var(--accent-6);
+  --fc-event-text-color: var(--gray-12);
+  --fc-today-bg-color: var(--accent-2);
 }
 
 .fc .fc-button {
@@ -262,52 +112,43 @@
 .fc .fc-col-header-cell-cushion,
 .fc .fc-daygrid-day-number,
 .fc .fc-timegrid-axis-cushion {
-  color: #15314c;
   text-decoration: none;
 }
 
 .fc .fc-event {
   border-radius: 10px;
-  padding: 0.15rem 0.35rem;
-}
-
-.fc .fc-event-title {
-  font-weight: 600;
+  padding: 2px 6px;
 }
 
 .fc .fc-status-confirmed {
-  background: #d9f5df;
-  border-color: #9fddb0;
-  color: #154b21;
+  background: var(--green-3);
+  border-color: var(--green-6);
+  color: var(--green-11);
 }
 
-.fc .fc-status-pending {
-  background: #fff1d8;
-  border-color: #f4cd79;
-  color: #724b00;
+.fc .fc-status-pending,
+.fc .fc-status-available {
+  background: var(--amber-3);
+  border-color: var(--amber-6);
+  color: var(--amber-11);
+}
+
+.fc .fc-status-cancelled {
+  background: var(--red-3);
+  border-color: var(--red-6);
+  color: var(--red-11);
 }
 
 .fc .fc-status-waitlist {
-  background: #edf0f4;
-  border-color: #c8d0da;
-  color: #4b5c6b;
-}
-
-@media (max-width: 900px) {
-  .trainer-search,
-  .trainer-select {
-    min-width: 100%;
-  }
-
-  .sessions-layout {
-    grid-template-columns: 1fr;
-  }
+  background: var(--gray-3);
+  border-color: var(--gray-6);
+  color: var(--gray-11);
 }
 
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .dialog-content {
@@ -315,9 +156,22 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
-  width: min(92vw, 420px);
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.2);
+  width: min(92vw, 560px);
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--color-panel-solid, white);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .session-meta-row {
+    align-items: start;
+    flex-direction: column;
+  }
 }

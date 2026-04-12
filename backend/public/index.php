@@ -62,7 +62,7 @@ function read_json_body(): array {
 // Basic CORS for dev
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   http_response_code(204);
@@ -73,6 +73,10 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $query = [];
 parse_str(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_QUERY) ?? '', $query);
+$trainerSessionIdMatches = [];
+$trainerSessionDetailPath = preg_match('#^/api/trainer-sessions/(\d+)$#', $path, $trainerSessionIdMatches) === 1;
+$trainerSessionCancelMatches = [];
+$trainerSessionCancelPath = preg_match('#^/api/trainer-sessions/(\d+)/cancel$#', $path, $trainerSessionCancelMatches) === 1;
 
 $postsClass = new PostsClass();
 $schedulingClass = new SchedulingClass();
@@ -104,6 +108,12 @@ try {
     exit;
   }
 
+  if ($method === 'GET' && $path === '/api/trainer-sessions/available') {
+    $trainerId = isset($query['trainerId']) && $query['trainerId'] !== '' ? (int)$query['trainerId'] : null;
+    send_json(200, $schedulingClass->getAvailableTrainerSessions(db(), $trainerId));
+    exit;
+  }
+
   if ($method === 'POST' && $path === '/api/trainer-sessions') {
     try {
       $row = $schedulingClass->createTrainerSession(db(), read_json_body());
@@ -114,8 +124,50 @@ try {
     exit;
   }
 
+  if ($method === 'PUT' && $trainerSessionDetailPath) {
+    try {
+      $row = $schedulingClass->updateTrainerSession(db(), (int)$trainerSessionIdMatches[1], read_json_body());
+      send_json(200, $row);
+    } catch (InvalidArgumentException $err) {
+      send_json(400, ['message' => $err->getMessage()]);
+    }
+    exit;
+  }
+
+  if ($method === 'POST' && $trainerSessionCancelPath) {
+    try {
+      $row = $schedulingClass->cancelTrainerSession(db(), (int)$trainerSessionCancelMatches[1]);
+      send_json(200, $row);
+    } catch (InvalidArgumentException $err) {
+      send_json(400, ['message' => $err->getMessage()]);
+    }
+    exit;
+  }
+
+  if ($method === 'GET' && $path === '/api/client-sessions') {
+    $clientId = isset($query['clientId']) ? (int)$query['clientId'] : 0;
+
+    if ($clientId === 0) {
+      send_json(400, ['message' => 'clientId is required']);
+      exit;
+    }
+
+    send_json(200, $schedulingClass->getClientSessions(db(), $clientId));
+    exit;
+  }
+
+  if ($method === 'POST' && $path === '/api/client-sessions') {
+    try {
+      $row = $schedulingClass->createClientSessionBooking(db(), read_json_body());
+      send_json(201, $row);
+    } catch (InvalidArgumentException $err) {
+      send_json(400, ['message' => $err->getMessage()]);
+    }
+    exit;
+  }
+
   if ($method === 'GET' && $path === '/') {
-    send_json(200, ['ok' => true, 'message' => 'PHP backend is running. See /api/health, /api/posts, and /api/trainer-sessions.']);
+    send_json(200, ['ok' => true, 'message' => 'PHP backend is running. See /api/health, /api/posts, /api/trainer-sessions, and /api/client-sessions.']);
     exit;
   }
 
