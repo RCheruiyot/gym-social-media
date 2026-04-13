@@ -7,7 +7,8 @@ final class SchedulingClass
   public function getAvailableTrainerSessions(PDO $pdo, ?int $trainerId = null): array
   {
     $sql = 'SELECT ts.id AS "sessionId", ts.start_time AS "startTime", ts.end_time AS "endTime",
-                   ts.trainer_id AS "trainerId", ts.title, ts.description, ts.status, ts.created_at AS "createdAt"
+                   ts.trainer_id AS "trainerId", ts.title, ts.description, ts.location, ts.status,
+                   ts.created_at AS "createdAt"
             FROM trainer_sessions ts
             LEFT JOIN client_sessions cs ON cs.session_id = ts.id
             WHERE cs.id IS NULL
@@ -31,7 +32,7 @@ final class SchedulingClass
     if ($trainerId !== null) {
       $stmt = $pdo->prepare(
         'SELECT id, start_time AS "startTime", end_time AS "endTime", trainer_id AS "trainerId",
-                title, description, status, created_at AS "createdAt"
+                title, description, location, status, created_at AS "createdAt"
          FROM trainer_sessions
          WHERE trainer_id = :trainer_id
          ORDER BY created_at DESC'
@@ -42,7 +43,7 @@ final class SchedulingClass
 
     $stmt = $pdo->query(
       'SELECT id, start_time AS "startTime", end_time AS "endTime", trainer_id AS "trainerId",
-              title, description, status, created_at AS "createdAt"
+              title, description, location, status, created_at AS "createdAt"
        FROM trainer_sessions
        ORDER BY created_at DESC'
     );
@@ -56,6 +57,7 @@ final class SchedulingClass
     $trainerId = isset($body['trainerId']) ? (int)$body['trainerId'] : 0;
     $title = isset($body['title']) ? trim((string)$body['title']) : 'Availability Hold';
     $description = isset($body['description']) ? trim((string)$body['description']) : '';
+    $location = isset($body['location']) ? trim((string)$body['location']) : '';
     $status = isset($body['status']) ? trim((string)$body['status']) : 'active';
 
     if ($startTime === 0 || $endTime === 0 || $trainerId === 0) {
@@ -69,10 +71,10 @@ final class SchedulingClass
     }
 
     $stmt = $pdo->prepare(
-      'INSERT INTO trainer_sessions (start_time, end_time, trainer_id, title, description, status)
-       VALUES (:start_time, :end_time, :trainer_id, :title, :description, :status)
+      'INSERT INTO trainer_sessions (start_time, end_time, trainer_id, title, description, location, status)
+       VALUES (:start_time, :end_time, :trainer_id, :title, :description, :location, :status)
        RETURNING id, start_time AS "startTime", end_time AS "endTime", trainer_id AS "trainerId",
-                 title, description, status, created_at AS "createdAt"'
+                 title, description, location, status, created_at AS "createdAt"'
     );
 
     $stmt->execute([
@@ -81,6 +83,7 @@ final class SchedulingClass
       ':trainer_id' => $trainerId,
       ':title' => $title,
       ':description' => $description,
+      ':location' => $location,
       ':status' => $status,
     ]);
         
@@ -95,6 +98,7 @@ final class SchedulingClass
     $trainerId = isset($body['trainerId']) ? (int)$body['trainerId'] : 0;
     $title = isset($body['title']) ? trim((string)$body['title']) : '';
     $description = isset($body['description']) ? trim((string)$body['description']) : '';
+    $location = isset($body['location']) ? trim((string)$body['location']) : '';
     $status = isset($body['status']) ? trim((string)$body['status']) : 'active';
 
     if ($sessionId === 0 || $startTime === 0 || $endTime === 0 || $trainerId === 0) {
@@ -110,10 +114,10 @@ final class SchedulingClass
     $stmt = $pdo->prepare(
       'UPDATE trainer_sessions
        SET start_time = :start_time, end_time = :end_time, trainer_id = :trainer_id,
-           title = :title, description = :description, status = :status
+           title = :title, description = :description, location = :location, status = :status
        WHERE id = :session_id
        RETURNING id, start_time AS "startTime", end_time AS "endTime", trainer_id AS "trainerId",
-                 title, description, status, created_at AS "createdAt"'
+                 title, description, location, status, created_at AS "createdAt"'
     );
 
     $stmt->execute([
@@ -123,6 +127,7 @@ final class SchedulingClass
       ':trainer_id' => $trainerId,
       ':title' => $title,
       ':description' => $description,
+      ':location' => $location,
       ':status' => $status,
     ]);
 
@@ -145,7 +150,7 @@ final class SchedulingClass
        SET status = \'cancelled\'
        WHERE id = :session_id
        RETURNING id, start_time AS "startTime", end_time AS "endTime", trainer_id AS "trainerId",
-                 title, description, status, created_at AS "createdAt"'
+                 title, description, location, status, created_at AS "createdAt"'
     );
     $stmt->execute([':session_id' => $sessionId]);
 
@@ -162,7 +167,7 @@ final class SchedulingClass
     $stmt = $pdo->prepare(
       'SELECT cs.id AS "bookingId", cs.session_id AS "sessionId", cs.client_id AS "clientId",
               ts.start_time AS "startTime", ts.end_time AS "endTime", ts.trainer_id AS "trainerId",
-              ts.title, ts.description, ts.status,
+              ts.title, ts.description, ts.location, ts.status,
               cs.created_at AS "createdAt"
        FROM client_sessions cs
        INNER JOIN trainer_sessions ts ON ts.id = cs.session_id
@@ -188,7 +193,7 @@ final class SchedulingClass
     try {
       $sessionStmt = $pdo->prepare(
         'SELECT id, start_time AS "startTime", end_time AS "endTime", trainer_id AS "trainerId"
-                , title, description, status
+                , title, description, location, status
          FROM trainer_sessions
          WHERE id = :session_id
          FOR UPDATE'

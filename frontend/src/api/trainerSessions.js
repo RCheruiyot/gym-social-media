@@ -17,7 +17,7 @@ export const normalizeTrainerSession = (session) => ({
   trainerId: session.trainerId,
   coachLabel: 'Trainer',
   coachName: `Trainer #${session.trainerId}`,
-  location: 'Trainer schedule',
+  location: session.location || '',
   status: session.status === 'cancelled' ? 'Cancelled' : 'Confirmed',
 });
 
@@ -31,7 +31,7 @@ export const normalizeAvailableTrainerSession = (session) => ({
   trainerId: session.trainerId,
   coachLabel: 'Trainer',
   coachName: `Trainer #${session.trainerId}`,
-  location: 'Available to book',
+  location: session.location || '',
   status: 'Available',
 });
 
@@ -46,7 +46,7 @@ export const normalizeClientSession = (session) => ({
   trainerId: session.trainerId,
   coachLabel: 'Trainer',
   coachName: `Trainer #${session.trainerId}`,
-  location: 'Booked with trainer',
+  location: session.location || '',
   status: session.status === 'cancelled' ? 'Cancelled' : 'Confirmed',
 });
 
@@ -87,6 +87,7 @@ export const createTrainerSession = async ({
   trainerId = DEFAULT_TRAINER_ID,
   title = 'Availability Hold',
   description = '',
+  location = '',
 }) => {
   const response = await fetch(`${API_BASE_URL}/api/trainer-sessions`, {
     method: 'POST',
@@ -99,6 +100,7 @@ export const createTrainerSession = async ({
       trainerId,
       title,
       description,
+      location,
       status: 'active',
     }),
   });
@@ -118,6 +120,7 @@ export const updateTrainerSession = async ({
   trainerId = DEFAULT_TRAINER_ID,
   title = 'Availability Hold',
   description = '',
+  location = '',
   status = 'active',
 }) => {
   const response = await fetch(`${API_BASE_URL}/api/trainer-sessions/${sessionId}`, {
@@ -131,6 +134,7 @@ export const updateTrainerSession = async ({
       trainerId,
       title,
       description,
+      location,
       status,
     }),
   });

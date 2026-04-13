@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS trainer_sessions (
   id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL DEFAULT 'Availability Hold',
+  description TEXT NOT NULL DEFAULT '',
+  location TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',
   start_time INT NOT NULL,
   end_time INT NOT NULL,
   trainer_id INT NOT NULL,
@@ -24,9 +28,8 @@ CREATE TABLE IF NOT EXISTS trainer_sessions (
 );
 
 ALTER TABLE trainer_sessions
-  ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'Availability Hold',
-  ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+ADD COLUMN IF NOT EXISTS location TEXT NOT NULL DEFAULT '';
+
 
 CREATE TABLE IF NOT EXISTS client_sessions (
   id SERIAL PRIMARY KEY,

@@ -20,27 +20,30 @@ const SignupPage = () => {
   };
 
   return (
-    <Flex direction="column" gap="4" className="signup-page">
+    <Flex direction="column" gap="4" className="signup-page" justify={"center"}>
       <Heading size="6">Sign Up</Heading>
       <Text color="gray">Choose your role to continue.</Text>
 
       <RadioCards.Root value={signupChoice} onValueChange={setSignupChoice}>
-        <RadioCards.Item value="client">
-          <Flex direction="column" gap="1">
-            <Text weight="bold">Client</Text>
-            <Text size="1" color="gray">
-              Find trainers, book sessions, track progress.
-            </Text>
-          </Flex>
-        </RadioCards.Item>
-        <RadioCards.Item value="trainer">
-          <Flex direction="column" gap="1">
-            <Text weight="bold">Trainer</Text>
-            <Text size="1" color="gray">
-              Manage clients, plans, schedule, and payments.
-            </Text>
-          </Flex>
-        </RadioCards.Item>
+        <Flex gap={"2"}>
+          <RadioCards.Item value="client">
+            <Flex direction="column" gap="1">
+              <Text weight="bold">Client</Text>
+              <Text size="1" color="gray">
+                Find trainers, book sessions, track progress.
+              </Text>
+            </Flex>
+          </RadioCards.Item>
+          <RadioCards.Item value="trainer">
+            <Flex direction="column" gap="1">
+              <Text weight="bold">Trainer</Text>
+              <Text size="1" color="gray">
+                Manage clients, plans, schedule, and payments.
+              </Text>
+            </Flex>
+          </RadioCards.Item>
+          
+        </Flex>
       </RadioCards.Root>
 
       {signupChoice === 'client' && (
