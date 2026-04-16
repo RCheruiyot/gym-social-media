@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useRole } from '../auth/RoleContext';
-import { Button, Card, Flex, Heading, Text } from '@radix-ui/themes';
+import { Card, Heading, Text } from '@radix-ui/themes';
 import DashboardCalendarPanel from '../components/DashboardCalendarPanel';
 
 const ClientDashboardPage = () => {
-  const { role, clearRole } = useRole();
-  const navigate = useNavigate();
   const [activeWidget, setActiveWidget] = useState('sessions');
 
   const widgetDetails = {
@@ -29,64 +25,59 @@ const ClientDashboardPage = () => {
         </Text>
       </Card>
     ),
+    settings: (
+      <Card className="widget-detail-card">
+        <Heading size="5">Settings</Heading>
+        <Text color="gray">
+          Use this area for notification preferences, profile details, and account controls once those forms are
+          wired in. For now it gives the dashboard a real destination instead of a dead link.
+        </Text>
+      </Card>
+    ),
   };
 
   return (
     <section>
-      <Flex justify={"between"}>
-        <Heading>Client Dashboard</Heading>
-        {role && (
-          <Button
+      <Text size="2" color="gray" className="dashboard-kicker">
+        Client Dashboard
+      </Text>
+
+      <section className="dashboard-main">
+        <div className="widget-grid">
+          <button
             type="button"
-            onClick={() => {
-              clearRole();
-              navigate('/');
-            }}
+            className={`widget-card widget-action-card ${activeWidget === 'sessions' ? 'widget-card-active' : ''}`}
+            id="my-sessions"
+            onClick={() => setActiveWidget('sessions')}
           >
-            Log out
-          </Button>
-        )}
-      </Flex>
+            <span className="widget-eyebrow">Availability</span>
+            <h3>Book Upcoming Sessions</h3>
+            <p>Book or reschedule your next 1:1 training slots with available trainers.</p>
+          </button>
 
-      <header className="dashboard-header">
-        <Link to="/client/find-trainer">Find Trainer</Link>
-        <Link to="/client/sessions">My Sessions</Link>
-        <a href="#progress">Progress</a>
-        <a href="#settings">Settings</a>
-      </header>
+          <button
+            type="button"
+            className={`widget-card widget-action-card ${activeWidget === 'plans' ? 'widget-card-active' : ''}`}
+            onClick={() => setActiveWidget('plans')}
+          >
+            <span className="widget-eyebrow">Plans</span>
+            <h3>Assigned Workouts & Meal Plans</h3>
+            <p>Review active plans uploaded by your trainer and mark tasks complete.</p>
+          </button>
 
-      <div className="widget-grid">
-        <button
-          type="button"
-          className={`widget-card widget-action-card ${activeWidget === 'sessions' ? 'widget-card-active' : ''}`}
-          id="my-sessions"
-          onClick={() => setActiveWidget('sessions')}
-        >
-          <h3>Book Upcoming Sessions</h3>
-          <p>Book or reschedule your next 1:1 training slots with available trainers.</p>
-        </button>
+          <button
+            type="button"
+            className={`widget-card widget-action-card ${activeWidget === 'progress' ? 'widget-card-active' : ''}`}
+            onClick={() => setActiveWidget('progress')}
+          >
+            <span className="widget-eyebrow">Metrics</span>
+            <h3>Track Progress</h3>
+            <p>Log weight, reps, body metrics, and weekly check-ins in one timeline.</p>
+          </button>
+        </div>
 
-        <button
-          type="button"
-          className={`widget-card widget-action-card ${activeWidget === 'plans' ? 'widget-card-active' : ''}`}
-          onClick={() => setActiveWidget('plans')}
-        >
-          <h3>Assigned Workouts & Meal Plans</h3>
-          <p>Review active plans uploaded by your trainer and mark tasks complete.</p>
-        </button>
-
-        <button
-          type="button"
-          className={`widget-card widget-action-card ${activeWidget === 'progress' ? 'widget-card-active' : ''}`}
-          id="progress"
-          onClick={() => setActiveWidget('progress')}
-        >
-          <h3>Track Progress</h3>
-          <p>Log weight, reps, body metrics, and weekly check-ins in one timeline.</p>
-        </button>
-      </div>
-
-      <div className="widget-detail-section">{widgetDetails[activeWidget]}</div>
+        <div className="widget-detail-section">{widgetDetails[activeWidget]}</div>
+      </section>
     </section>
   );
 };

@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useRole } from '../auth/RoleContext';
-import { Button, Card, Flex, Heading, Text } from '@radix-ui/themes';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Card, Heading, Text } from '@radix-ui/themes';
 import DashboardCalendarPanel from '../components/DashboardCalendarPanel';
 const TrainerDashboardPage = () => {
-  const { role, clearRole } = useRole();
-  const navigate = useNavigate();
-  const [activeWidget, setActiveWidget] = useState('schedule');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeWidget, setActiveWidgetState] = useState(searchParams.get('tab') || 'schedule');
+
+  useEffect(() => {
+    setActiveWidgetState(searchParams.get('tab') || 'schedule');
+  }, [searchParams]);
+
+  const setActiveWidget = (nextWidget) => {
+    setActiveWidgetState(nextWidget);
+    setSearchParams({ tab: nextWidget });
+  };
 
   const widgetDetails = {
     schedule: <DashboardCalendarPanel role="trainer" />,
@@ -28,63 +35,58 @@ const TrainerDashboardPage = () => {
         </Text>
       </Card>
     ),
+    profile: (
+      <Card className="widget-detail-card">
+        <Heading size="5">Trainer Profile</Heading>
+        <Text color="gray">
+          This panel is the natural place for your bio, specialties, media, and pricing controls. It is ready
+          for profile editing once you connect the form and backend data.
+        </Text>
+      </Card>
+    ),
   };
 
   return (
     <section>
-      <Flex justify={"between"}>
-        <Heading>Trainer Dashboard</Heading>
-        {role && (
-          <Button
+      <Text size="2" color="gray" className="dashboard-kicker">
+        Trainer Dashboard
+      </Text>
+
+      <section className="dashboard-main">
+        <div className="widget-grid">
+          <button
             type="button"
-            onClick={() => {
-              clearRole();
-              navigate('/');
-            }}
+            className={`widget-card widget-action-card ${activeWidget === 'schedule' ? 'widget-card-active' : ''}`}
+            onClick={() => setActiveWidget('schedule')}
           >
-            Log out
-          </Button>
-        )}
-      </Flex>
-      <header className="dashboard-header">
-        <a href="#clients">Clients</a>
-        <Link to="/trainer/schedule">Schedule</Link>
-        <a href="#payments">Payments</a>
-        <a href="#profile">Profile</a>
-      </header>
+            <span className="widget-eyebrow">Requests</span>
+            <h3>Client Requests</h3>
+            <p>Approve new requests, set onboarding calls, and manage active clients.</p>
+          </button>
 
-      <div className="widget-grid">
-        <button
-          type="button"
-          className={`widget-card widget-action-card ${activeWidget === 'schedule' ? 'widget-card-active' : ''}`}
-          id="clients"
-          onClick={() => setActiveWidget('schedule')}
-        >
-          <h3>Client Requests</h3>
-          <p>Approve new requests, set onboarding calls, and manage active clients.</p>
-        </button>
+          <button
+            type="button"
+            className={`widget-card widget-action-card ${activeWidget === 'plans' ? 'widget-card-active' : ''}`}
+            onClick={() => setActiveWidget('plans')}
+          >
+            <span className="widget-eyebrow">Programs</span>
+            <h3>Workout Plan Uploads</h3>
+            <p>Upload and version workout plans, meal templates, and weekly adjustments.</p>
+          </button>
 
-        <button
-          type="button"
-          className={`widget-card widget-action-card ${activeWidget === 'plans' ? 'widget-card-active' : ''}`}
-          onClick={() => setActiveWidget('plans')}
-        >
-          <h3>Workout Plan Uploads</h3>
-          <p>Upload and version workout plans, meal templates, and weekly adjustments.</p>
-        </button>
+          <button
+            type="button"
+            className={`widget-card widget-action-card ${activeWidget === 'earnings' ? 'widget-card-active' : ''}`}
+            onClick={() => setActiveWidget('earnings')}
+          >
+            <span className="widget-eyebrow">Revenue</span>
+            <h3>Earnings & Upcoming Sessions</h3>
+            <p>Track payout status, booked sessions, and projected weekly earnings.</p>
+          </button>
+        </div>
 
-        <button
-          type="button"
-          className={`widget-card widget-action-card ${activeWidget === 'earnings' ? 'widget-card-active' : ''}`}
-          id="payments"
-          onClick={() => setActiveWidget('earnings')}
-        >
-          <h3>Earnings & Upcoming Sessions</h3>
-          <p>Track payout status, booked sessions, and projected weekly earnings.</p>
-        </button>
-      </div>
-
-      <div className="widget-detail-section">{widgetDetails[activeWidget]}</div>
+        <div className="widget-detail-section">{widgetDetails[activeWidget]}</div>
+      </section>
     </section>
   );
 };
