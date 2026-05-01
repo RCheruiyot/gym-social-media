@@ -9,13 +9,12 @@ import {
   cancelTrainerSession,
   createClientSessionBooking,
   createTrainerSession,
-  DEFAULT_CLIENT_ID,
-  DEFAULT_TRAINER_ID,
   fetchAvailableTrainerSessions,
   fetchClientSessions,
   fetchTrainerSessions,
   updateTrainerSession,
 } from '../api/trainerSessions';
+import { useRole } from '../auth/RoleContext';
 
 const clientBaseEvents = [
   {
@@ -43,7 +42,7 @@ const trainerBaseEvents = [
     coachName: 'Open Slot',
     location: 'Virtual',
     status: 'Pending',
-    trainerId: DEFAULT_TRAINER_ID,
+    trainerId: 1,
   },
 ];
 
@@ -72,6 +71,7 @@ const SessionCalendar = ({
   showHeader = false,
   showItemCount = false,
 }) => {
+  const { userId } = useRole();
   const seedEvents = role === 'trainer' ? trainerBaseEvents : clientBaseEvents;
   const [events, setEvents] = useState(seedEvents);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -88,10 +88,10 @@ const SessionCalendar = ({
 
     const loadEvents = () => {
       if (role === 'trainer') {
-        return fetchTrainerSessions();
+        return fetchTrainerSessions(userId);
       }
 
-      return variant === 'sessions' ? fetchClientSessions() : fetchAvailableTrainerSessions();
+      return variant === 'sessions' ? fetchClientSessions(userId) : fetchAvailableTrainerSessions();
     };
 
     loadEvents()
@@ -110,7 +110,7 @@ const SessionCalendar = ({
     return () => {
       isMounted = false;
     };
-  }, [role, variant]);
+  }, [role, userId, variant]);
 
   useEffect(() => {
     setFormTitle(selectedEvent?.title || '');
@@ -147,10 +147,10 @@ const SessionCalendar = ({
       description: '',
       start: selection.startStr,
       end: selection.endStr || selection.startStr,
-      trainerId: DEFAULT_TRAINER_ID,
+      trainerId: userId,
       coachLabel: 'Client',
       coachName: 'Open Slot',
-      trainer: `Trainer #${DEFAULT_TRAINER_ID}`,
+      trainer: `Trainer #${userId}`,
       location: '',
       status: 'Pending',
     };
@@ -176,7 +176,7 @@ const SessionCalendar = ({
       try {
         await createClientSessionBooking({
           sessionId: selectedEvent.sessionId,
-          clientId: DEFAULT_CLIENT_ID,
+          clientId: userId,
         });
         setEvents((currentEvents) => currentEvents.filter((event) => event.id !== selectedEvent.id));
         setIsDialogOpen(false);
@@ -201,7 +201,7 @@ const SessionCalendar = ({
         ? await createTrainerSession({
             start: selectedEvent.start,
             end: selectedEvent.end,
-            trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
+            trainerId: selectedEvent.trainerId || userId,
             title: formTitle,
             description: formDescription,
             location: formLocation,
@@ -210,7 +210,7 @@ const SessionCalendar = ({
             sessionId: Number(selectedEvent.sessionId),
             start: selectedEvent.start,
             end: selectedEvent.end,
-            trainerId: selectedEvent.trainerId || DEFAULT_TRAINER_ID,
+            trainerId: selectedEvent.trainerId || userId,
             title: formTitle,
             description: formDescription,
             location: formLocation,
@@ -283,7 +283,7 @@ const SessionCalendar = ({
         sessionId: Number(info.event.extendedProps.sessionId ?? info.event.id.replace(/^trainer-/, '')),
         start: info.event.startStr,
         end: info.event.endStr || info.event.startStr,
-        trainerId: info.event.extendedProps.trainerId || DEFAULT_TRAINER_ID,
+        trainerId: info.event.extendedProps.trainerId || userId,
         title: info.event.title,
         description: info.event.extendedProps.description || '',
         location: info.event.extendedProps.location || '',

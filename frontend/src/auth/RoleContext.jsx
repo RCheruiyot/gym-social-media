@@ -1,27 +1,52 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { loginUser, signupUser } from '../api/auth';
 
-const STORAGE_KEY = 'fitmarket_role';
+const STORAGE_KEY = 'fitmarket_auth_user';
 
 const RoleContext = createContext(null);
 
 export const RoleProvider = ({ children }) => {
-  const [role, setRoleState] = useState(() => {
+  const [user, setUser] = useState(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === 'client' || stored === 'trainer' ? stored : null;
+    if (!stored) return null;
+
+    try {
+      const parsed = JSON.parse(stored);
+      return parsed && (parsed.role === 'client' || parsed.role === 'trainer') ? parsed : null;
+    } catch (error) {
+      return null;
+    }
   });
 
-  const setRole = (nextRole) => {
-    if (nextRole !== 'client' && nextRole !== 'trainer') return;
-    window.localStorage.setItem(STORAGE_KEY, nextRole);
-    setRoleState(nextRole);
-  };
+  const persistUser = useCallback((nextUser) => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+    setUser(nextUser);
+  }, []);
 
-  const clearRole = () => {
+  const signup = useCallback(async ({ username, email, password, role }) => {
+    const nextUser = await signupUser({ username, email, password, role });
+    persistUser(nextUser);
+    return nextUser;
+  }, [persistUser]);
+
+  const login = useCallback(async ({ email, password }) => {
+    const nextUser = await loginUser({ email, password });
+    persistUser(nextUser);
+    return nextUser;
+  }, [persistUser]);
+
+  const clearRole = useCallback(() => {
     window.localStorage.removeItem(STORAGE_KEY);
-    setRoleState(null);
-  };
+    setUser(null);
+  }, []);
 
-  const value = useMemo(() => ({ role, setRole, clearRole }), [role]);
+  const role = user?.role ?? null;
+  const userId = user?.id ? Number(user.id) : null;
+
+  const value = useMemo(
+    () => ({ role, user, userId, signup, login, clearRole }),
+    [role, user, userId, signup, login, clearRole],
+  );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 };
@@ -31,4 +56,3 @@ export const useRole = () => {
   if (!ctx) throw new Error('useRole must be used inside <RoleProvider>');
   return ctx;
 };
-

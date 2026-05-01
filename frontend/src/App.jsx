@@ -15,6 +15,7 @@ const App = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const trainerTab = new URLSearchParams(location.search).get('tab') || 'schedule';
+  const isTrainerDashboardPage = location.pathname === '/trainer';
 
   return (
     <main className="app-shell">
@@ -25,7 +26,7 @@ const App = () => {
         <nav className="app-nav">
           {role === 'client' ? (
             <>
-              <NavLink to="/client" className={({ isActive }) => (isActive ? 'active-link' : '')}>
+              <NavLink to="/client" end className={({ isActive }) => (isActive ? 'active-link' : '')}>
                 <Text>Dashboard</Text>
               </NavLink>
               <NavLink to="/client/find-trainer" className={({ isActive }) => (isActive ? 'active-link' : '')}>
@@ -38,16 +39,16 @@ const App = () => {
           ) : null}
           {role === 'trainer' ? (
             <>
-              <Link to="/trainer?tab=schedule" className={trainerTab === 'schedule' ? 'active-link' : ''}>
+              <Link to="/trainer?tab=schedule" className={isTrainerDashboardPage && trainerTab === 'schedule' ? 'active-link' : ''}>
                 <Text>Clients</Text>
               </Link>
-              <Link to="/trainer?tab=plans" className={trainerTab === 'plans' ? 'active-link' : ''}>
+              <Link to="/trainer?tab=plans" className={isTrainerDashboardPage && trainerTab === 'plans' ? 'active-link' : ''}>
                 <Text>Programs</Text>
               </Link>
-              <Link to="/trainer?tab=earnings" className={trainerTab === 'earnings' ? 'active-link' : ''}>
+              <Link to="/trainer?tab=earnings" className={isTrainerDashboardPage && trainerTab === 'earnings' ? 'active-link' : ''}>
                 <Text>Payments</Text>
               </Link>
-              <Link to="/trainer?tab=profile" className={trainerTab === 'profile' ? 'active-link' : ''}>
+              <Link to="/trainer?tab=profile" className={isTrainerDashboardPage && trainerTab === 'profile' ? 'active-link' : ''}>
                 <Text>Profile</Text>
               </Link>
             </>

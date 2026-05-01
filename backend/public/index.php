@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/postsClass.php';
 require_once __DIR__ . '/../src/schedulingClass.php';
+require_once __DIR__ . '/../src/signupClass.php';
 
 function send_json(int $status, array $body): void {
   http_response_code($status);
@@ -80,10 +81,31 @@ $trainerSessionCancelPath = preg_match('#^/api/trainer-sessions/(\d+)/cancel$#',
 
 $postsClass = new PostsClass();
 $schedulingClass = new SchedulingClass();
+$signupClass = new SignupClass();
 
 try {
   if ($method === 'GET' && $path === '/api/health') {
     send_json(200, ['ok' => true, 'service' => 'backend']);
+    exit;
+  }
+
+  if ($method === 'POST' && $path === '/api/auth/signup') {
+    try {
+      $row = $signupClass->signup(db(), read_json_body());
+      send_json(201, $row);
+    } catch (InvalidArgumentException $err) {
+      send_json(400, ['message' => $err->getMessage()]);
+    }
+    exit;
+  }
+
+  if ($method === 'POST' && $path === '/api/auth/login') {
+    try {
+      $row = $signupClass->login(db(), read_json_body());
+      send_json(200, $row);
+    } catch (InvalidArgumentException $err) {
+      send_json(400, ['message' => $err->getMessage()]);
+    }
     exit;
   }
 

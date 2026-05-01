@@ -1,11 +1,16 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
-export const DEFAULT_TRAINER_ID = 1;
-export const DEFAULT_CLIENT_ID = 1;
-
 const toIsoStringFromUnix = (value) => new Date(Number(value) * 1000).toISOString();
 
 const toUnixSeconds = (value) => Math.floor(new Date(value).getTime() / 1000);
+
+const requireId = (value, label) => {
+  const normalized = Number(value);
+  if (!normalized) {
+    throw new Error(`${label} is required`);
+  }
+  return normalized;
+};
 
 export const normalizeTrainerSession = (session) => ({
   id: `trainer-${session.id}`,
@@ -50,8 +55,9 @@ export const normalizeClientSession = (session) => ({
   status: session.status === 'cancelled' ? 'Cancelled' : 'Confirmed',
 });
 
-export const fetchTrainerSessions = async (trainerId = DEFAULT_TRAINER_ID) => {
-  const response = await fetch(`${API_BASE_URL}/api/trainer-sessions?trainerId=${trainerId}`);
+export const fetchTrainerSessions = async (trainerId) => {
+  const normalizedTrainerId = requireId(trainerId, 'trainerId');
+  const response = await fetch(`${API_BASE_URL}/api/trainer-sessions?trainerId=${normalizedTrainerId}`);
   if (!response.ok) {
     throw new Error('Unable to load trainer sessions');
   }
@@ -71,8 +77,9 @@ export const fetchAvailableTrainerSessions = async (trainerId) => {
   return Array.isArray(rows) ? rows.map(normalizeAvailableTrainerSession) : [];
 };
 
-export const fetchClientSessions = async (clientId = DEFAULT_CLIENT_ID) => {
-  const response = await fetch(`${API_BASE_URL}/api/client-sessions?clientId=${clientId}`);
+export const fetchClientSessions = async (clientId) => {
+  const normalizedClientId = requireId(clientId, 'clientId');
+  const response = await fetch(`${API_BASE_URL}/api/client-sessions?clientId=${normalizedClientId}`);
   if (!response.ok) {
     throw new Error('Unable to load booked sessions');
   }
@@ -84,7 +91,7 @@ export const fetchClientSessions = async (clientId = DEFAULT_CLIENT_ID) => {
 export const createTrainerSession = async ({
   start,
   end,
-  trainerId = DEFAULT_TRAINER_ID,
+  trainerId,
   title = 'Availability Hold',
   description = '',
   location = '',
@@ -97,7 +104,7 @@ export const createTrainerSession = async ({
     body: JSON.stringify({
       startTime: toUnixSeconds(start),
       endTime: toUnixSeconds(end),
-      trainerId,
+      trainerId: requireId(trainerId, 'trainerId'),
       title,
       description,
       location,
@@ -117,7 +124,7 @@ export const updateTrainerSession = async ({
   sessionId,
   start,
   end,
-  trainerId = DEFAULT_TRAINER_ID,
+  trainerId,
   title = 'Availability Hold',
   description = '',
   location = '',
@@ -131,7 +138,7 @@ export const updateTrainerSession = async ({
     body: JSON.stringify({
       startTime: toUnixSeconds(start),
       endTime: toUnixSeconds(end),
-      trainerId,
+      trainerId: requireId(trainerId, 'trainerId'),
       title,
       description,
       location,
@@ -160,7 +167,7 @@ export const cancelTrainerSession = async (sessionId) => {
   return normalizeTrainerSession(body);
 };
 
-export const createClientSessionBooking = async ({ sessionId, clientId = DEFAULT_CLIENT_ID }) => {
+export const createClientSessionBooking = async ({ sessionId, clientId }) => {
   const response = await fetch(`${API_BASE_URL}/api/client-sessions`, {
     method: 'POST',
     headers: {
@@ -168,7 +175,7 @@ export const createClientSessionBooking = async ({ sessionId, clientId = DEFAULT
     },
     body: JSON.stringify({
       sessionId,
-      clientId,
+      clientId: requireId(clientId, 'clientId'),
     }),
   });
 
