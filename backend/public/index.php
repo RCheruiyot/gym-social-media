@@ -60,8 +60,22 @@ function read_json_body(): array {
   return $decoded;
 }
 
-// Basic CORS for dev
-header('Access-Control-Allow-Origin: *');
+function configure_cors(): void {
+  $allowedOrigin = getenv('CORS_ALLOWED_ORIGIN') ?: '*';
+  $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+  if ($allowedOrigin === '*') {
+    header('Access-Control-Allow-Origin: *');
+    return;
+  }
+
+  if ($requestOrigin === $allowedOrigin) {
+    header("Access-Control-Allow-Origin: {$requestOrigin}");
+    header('Vary: Origin');
+  }
+}
+
+configure_cors();
 header('Access-Control-Allow-Headers: Content-Type');
 header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
 
