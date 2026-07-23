@@ -1,104 +1,89 @@
-# Gym Social Media App (Starter)
+# FitMarket
 
-This project now includes:
-- `frontend`: React + TypeScript app (`http://localhost:3000`)
-- `backend`: Express + TypeScript API (`http://localhost:5000`)
-- `db`: PostgreSQL (Docker, `localhost:5432`)
+FitMarket is a small marketplace app for clients and trainers. It provides account signup/login, trainer availability, client session booking, and a basic social-post API.
 
-## 1. Prerequisites
+## Stack
 
-- Node.js 18+ (or 20+ recommended)
-- npm
-- Docker Desktop (for database / full stack with Docker Compose)
+- Frontend: React 18 (Create React App)
+- Backend: PHP 8.3 with PDO PostgreSQL
+- Database: PostgreSQL 16
+- Local orchestration: Docker Compose
 
-## 2. Quick Start (Recommended: Docker Compose)
+## Quick start
 
-From project root (`gym-social-media`):
+Docker Compose is the supported development environment. From the repository root, run:
 
 ```bash
 docker compose up --build
 ```
 
-Then open:
-- Frontend: `http://localhost:3000`
-- Backend health endpoint: `http://localhost:5000/api/health`
+Open the app at <http://localhost:3000>. The API health endpoint is available at <http://localhost:5000/api/health>.
 
-If ports are already in use, override them when starting:
+To use different host ports:
 
 ```bash
 FRONTEND_PORT=3001 BACKEND_PORT=5001 DB_PORT=5433 docker compose up --build
 ```
 
-Then open:
-- Frontend: `http://localhost:3001`
-- Backend health endpoint: `http://localhost:5001/api/health`
+The frontend calls the backend at `http://localhost:<BACKEND_PORT>`, so no additional frontend configuration is required for this Compose setup.
 
-If you want to check database data:
-
-```bash
-docker compose exec db psql -U postgres -d gym_social
-```
-
-Stop services:
+Stop the services with:
 
 ```bash
 docker compose down
 ```
 
-If you want to also remove database data:
+To also remove local database data:
 
 ```bash
 docker compose down -v
 ```
 
-## 3. Local Dev (Run Frontend + Backend without Docker, DB with Docker)
+## Local development without the backend container
 
-### Step A: Start Postgres in Docker
+Start Postgres with Docker:
 
-```powershell
+```bash
 docker compose up -d db
 ```
 
-### Step B: Start Backend
+The backend requires PHP 8.3+ with the `pdo_pgsql` extension enabled. Start it from the repository root:
 
-```powershell
-cd backend
-npm install
-npm run dev
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gym_social \
+php -S 0.0.0.0:5000 -t backend/public
 ```
 
-Backend runs on `http://localhost:5000`.
+In another terminal, start the frontend:
 
-### Step C: Start Frontend
-
-Open a second terminal:
-
-```powershell
+```bash
 cd frontend
-npm install
-npm start
+npm ci
+REACT_APP_API_BASE_URL=http://localhost:5000 npm start
 ```
 
-Frontend runs on `http://localhost:3000`.
-
-## 4. API Endpoints
+## API
 
 - `GET /api/health`
-- `GET /api/posts`
-- `POST /api/posts`
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET`, `POST /api/posts`
+- `GET`, `POST /api/trainer-sessions`
+- `PUT /api/trainer-sessions/:id`
+- `POST /api/trainer-sessions/:id/cancel`
+- `GET`, `POST /api/client-sessions`
 
-Example POST body:
+For a fresh database volume, schema initialization runs automatically from `backend/sql/init.sql`.
 
-```json
-{
-  "title": "Leg day complete",
-  "content": "Hit a new PR on squats today.",
-  "authorName": "Roy"
-}
+## Checks
+
+```bash
+php -l backend/public/index.php
+php -l backend/src/postsClass.php
+php -l backend/src/schedulingClass.php
+php -l backend/src/signupClass.php
+
+cd frontend && npm ci && npm run build
 ```
 
-## 5. Database Notes
-
-- Table creation is automatic through `backend/sql/init.sql` when the `db` container starts for a fresh volume.
-- Default connection string used by backend:
-  `postgresql://postgres:postgres@localhost:5432/gym_social`
+There are currently no automated application tests.

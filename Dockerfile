@@ -1,22 +1,16 @@
-FROM node:14
+# PHP API image for users who build from the repository root.
+# For the complete local stack, use `docker compose up --build`.
+FROM php:8.3-cli
 
-# Set the working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY backend/package*.json ./
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libpq-dev \
+  && rm -rf /var/lib/apt/lists/* \
+  && docker-php-ext-install pdo pdo_pgsql
 
-# Install dependencies
-RUN npm install
+COPY backend/ .
 
-# Copy the rest of the application code
-COPY backend/src ./src
+EXPOSE 5000
 
-# Build the TypeScript code
-RUN npm run build
-
-# Expose the port the app runs on
-EXPOSE 3000
-
-# Command to run the application
-CMD ["node", "dist/index.js"]
+CMD ["php", "-S", "0.0.0.0:5000", "-t", "public"]
